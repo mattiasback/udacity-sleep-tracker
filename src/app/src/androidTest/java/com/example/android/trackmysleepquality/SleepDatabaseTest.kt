@@ -26,6 +26,7 @@ import com.example.android.trackmysleepquality.database.SleepDatabaseDao
 import com.example.android.trackmysleepquality.database.SleepNight
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -68,24 +69,35 @@ class SleepDatabaseTest {
     @Test
     @Throws(Exception::class)
     fun insertAndGetNight() {
+        //Arrange
         val night = SleepNight()
+
+        //Act
         sleepDao.insert(night)
         val tonight = sleepDao.getTonight()
+
+        //Assert
         assertEquals(-1, tonight?.sleepQuality)
     }
 
     @Test
     @Throws(Exception::class)
     fun insertAndGetNightById() {
+        //Arrange
         val night = SleepNight()
+
+        //Act
         val id = sleepDao.insert(night)
         val tonight = sleepDao.get(id)
+
+        //Assert
         assertEquals(-1, tonight?.sleepQuality)
     }
 
     @Test
     @Throws(Exception::class)
     fun getAllNights() {
+        //Arrange
         val night = SleepNight()
         val nightTwo = SleepNight()
 
@@ -94,11 +106,43 @@ class SleepDatabaseTest {
             nights = it
         }
 
-        //insert two nights
+        //Act
         sleepDao.insert(night)
         sleepDao.insert(nightTwo)
 
+        //Assert
         assertEquals(2, nights.size)
+    }
+
+
+    @Test
+    @Throws(Exception::class)
+    fun clear() {
+        //Arrange
+        sleepDao.insert(SleepNight())
+
+        //Act
+        sleepDao.clear()
+        var night = sleepDao.getTonight()
+
+        //Assert
+        assertNull(night)
+    }
+
+    @Test
+    @Throws(Exception::class)
+    fun update() {
+        //Arrange
+        sleepDao.insert(SleepNight())
+
+        //Act
+        var night = sleepDao.getTonight()
+        night!!.sleepQuality = 5
+        sleepDao.update(night!!)
+
+        //Assert
+        var updatedNight = sleepDao.getTonight()
+        assertEquals(5, updatedNight!!.sleepQuality)
     }
 }
 
