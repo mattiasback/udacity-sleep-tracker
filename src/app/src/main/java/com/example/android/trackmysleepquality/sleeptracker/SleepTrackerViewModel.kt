@@ -18,10 +18,10 @@ package com.example.android.trackmysleepquality.sleeptracker
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.MutableLiveData
 import com.example.android.trackmysleepquality.database.SleepDatabaseDao
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
+import com.example.android.trackmysleepquality.database.SleepNight
+import kotlinx.coroutines.*
 
 /**
  * ViewModel for SleepTrackerFragment.
@@ -38,5 +38,43 @@ class SleepTrackerViewModel(
     }
 
     private val uiScope = CoroutineScope(Dispatchers.Main + viewModelJob )
+
+    private val tonight = MutableLiveData<SleepNight>()
+
+    private val nights = database.getAllNights()
+
+    init {
+        initializeTonight()
+    }
+
+    private fun initializeTonight() {
+        uiScope.launch {
+            tonight.value = getTonightFromDatabase()
+        }
+    }
+
+    private suspend fun getTonightFromDatabase(): SleepNight? {
+        return withContext(Dispatchers.IO) {
+            var night = database.getTonight()
+            if(night?.endTimeMilli != night?.startTimeMilli) {
+                night = null
+            }
+            night
+        }
+    }
+
+    fun onStartTracking() {
+        uiScope.launch {
+            val night = SleepNight()
+            insert(night)
+            tonight.value = getTonightFromDatabase()
+        }
+    }
+
+    private suspend fun insert(night: SleepNight) {
+        withContext(Dispatchers.IO) {
+            database.insert(night)
+        }
+    }
 }
 
