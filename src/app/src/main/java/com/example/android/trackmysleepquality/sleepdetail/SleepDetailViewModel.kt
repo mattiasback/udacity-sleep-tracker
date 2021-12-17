@@ -14,39 +14,41 @@
  * limitations under the License.
  */
 
-package com.example.android.trackmysleepquality.sleepquality
+package com.example.android.trackmysleepquality.sleepdetail
 
 import androidx.lifecycle.LiveData
+import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.example.android.trackmysleepquality.database.SleepDatabaseDao
-import kotlinx.coroutines.*
+import com.example.android.trackmysleepquality.database.SleepNight
+import kotlinx.coroutines.Job
 
 /**
  * ViewModel for SleepQualityFragment.
  *
  * @param sleepNightKey The key of the current night we are working on.
  */
-class SleepQualityViewModel(
-        private val sleepNightKey: Long = 0L,
-        val database: SleepDatabaseDao) : ViewModel() {
+class SleepDetailViewModel(
+    private val sleepNightKey: Long = 0L,
+    dataSource: SleepDatabaseDao) : ViewModel() {
+
+    /**
+     * Hold a reference to SleepDatabase via its SleepDatabaseDao.
+     */
+    val database = dataSource
 
 
     /**
-     * viewModelJob allows us to cancel all coroutines started by this ViewModel.
      */
-    private val viewModelJob = Job()
 
-    /**
-     * A [CoroutineScope] keeps track of all coroutines started by this ViewModel.
-     *
-     * Because we pass it [viewModelJob], any coroutine started in this scope can be cancelled
-     * by calling `viewModelJob.cancel()`
-     *
-     * By default, all coroutines started in uiScope will launch in [Dispatchers.Main] which is
-     * the main thread on Android. This is a sensible default because most coroutines started by
-     */
+    private val night = MediatorLiveData<SleepNight>()
+
+    fun getNight() = night
+
+    init {
+        night.addSource(database.getNightWithId(sleepNightKey), night::setValue)
+    }
 
     /**
      * Variable that tells the fragment whether it should navigate to [SleepTrackerFragment].
@@ -66,6 +68,7 @@ class SleepQualityViewModel(
      *
      */
 
+
     /**
      * Call this immediately after navigating to [SleepTrackerFragment]
      */
@@ -73,21 +76,10 @@ class SleepQualityViewModel(
         _navigateToSleepTracker.value = null
     }
 
-    /**
-     * Sets the sleep quality and updates the database.
-     *
-     * Then navigates back to the SleepTrackerFragment.
-     */
-    fun onSetSleepQuality(quality: Int) {
-        viewModelScope.launch {
-            // IO is a thread pool for running operations that access the disk, such as
-            // our Room database.
-                val tonight = database.get(sleepNightKey) ?: return@launch
-                tonight.sleepQuality = quality
-                database.update(tonight)
-
-            // Setting this state variable to true will alert the observer and trigger navigation.
-            _navigateToSleepTracker.value = true
-        }
+    fun onClose() {
+        _navigateToSleepTracker.value = true
     }
+
 }
+
+ 
